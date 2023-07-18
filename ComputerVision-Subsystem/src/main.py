@@ -1,17 +1,16 @@
-import cv2
+from object_detection import ObjectDetector
 from pathlib import Path
+
+import cv2
 import configparser
-from frames import saveFrames
-from object_detection import classify_image
+
 
 config_path = str((Path(__file__).parent / "config.ini").resolve())
 config = configparser.ConfigParser()
 config.read(config_path)
 
-# saveFrames(config_path, "video2")
+image_path = str(Path(config_path, config['VIDEOS']['video3']).resolve())
 
-image_path = str(Path(config_path, config['IMAGES']['vid2_frame']).resolve())
+objectDetector = ObjectDetector(config_path)
 
-classify_image(config_path, image_path)
-
-cv2.destroyAllWindows()
+objectDetector.detectObject(image_path)
