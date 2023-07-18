@@ -39,6 +39,9 @@ class ObjectDetector():
             success, img = video_capture.read()
             # do frame by frame for video
             results=model(img,stream=True)
+            # draw a line in the center of the image
+            cv2.line(img, (0, frame_height//2), (frame_width, frame_height//2), (0, 255, 0), thickness=2)
+
             # check each bounding box -> draw a rectangle and label it
             for r in results:
                 boxes=r.boxes
