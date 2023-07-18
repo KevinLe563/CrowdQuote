@@ -40,7 +40,7 @@ class ObjectDetector():
             # do frame by frame for video
             results=model(img,stream=True)
             # draw a line in the center of the image
-            cv2.line(img, (0, frame_height//2), (frame_width, frame_height//2), (0, 255, 0), thickness=2)
+            self.drawEntranceExitLine(img, (0, frame_height//2), (frame_width, frame_height//2))
 
             # check each bounding box -> draw a rectangle and label it
             for r in results:
@@ -48,16 +48,8 @@ class ObjectDetector():
                 for box in boxes:
                     object_class=int(box.cls[0])
                     class_name=self.classes[object_class]
-                    if class_name == self.classes[0]: # ignore other objects
-                        x1,y1,x2,y2=box.xyxy[0]
-                        x1,y1,x2,y2=int(x1), int(y1), int(x2), int(y2)
-                        cv2.rectangle(img, (x1,y1), (x2,y2), (255,0,255),3)
-                        
-                        label=f'{class_name}'
-                        t_size = cv2.getTextSize(label, 0, fontScale=1, thickness=2)[0]
-                        c2 = x1 + t_size[0], y1 - t_size[1] - 3
-                        cv2.rectangle(img, (x1,y1), c2, [255,0,255], -1, cv2.LINE_AA)  # filled
-                        cv2.putText(img, label, (x1,y1-2),0, 1,[255,255,255], thickness=1,lineType=cv2.LINE_AA)
+                    if class_name == self.classes[0]: # check if it's a person, ignore other objects
+                        self.objectLabel(img, class_name, box)
             output_video.write(img)
             cv2.imshow("Image", img)
             if cv2.waitKey(1) & 0xFF==ord('q'):
@@ -66,3 +58,25 @@ class ObjectDetector():
         video_capture.release()
         output_video.release()
         cv2.destroyAllWindows()
+
+    def drawEntranceExitLine(self, img, coord1, coord2):
+        cv2.line(img, coord1, coord2, (0, 255, 0), thickness=2)
+
+    def objectLabel(self, img, class_name, box, color=(255,0,255)):
+        x1,y1,x2,y2=box.xyxy[0]
+        x1,y1,x2,y2=int(x1), int(y1), int(x2), int(y2)
+        cv2.rectangle(img, (x1,y1), (x2,y2), color,3)
+        
+        label=f'{class_name}'
+        t_size = cv2.getTextSize(label, 0, fontScale=1, thickness=2)[0]
+        c2 = x1 + t_size[0], y1 - t_size[1] - 3
+        # bounding box
+        cv2.rectangle(img, (x1,y1), c2, color, -1, cv2.LINE_AA)  # filled
+        # centroid
+        bounding_box_width = x2-x1
+        bounding_box_height = y2-y1
+        center_x = x1 + bounding_box_width//2
+        center_y = y1 + bounding_box_height//2
+        cv2.circle(img, (center_x, center_y), 5, color, cv2.FILLED)
+        # class label
+        cv2.putText(img, label, (x1,y1-2),0, 1, (255, 255, 255), thickness=1,lineType=cv2.LINE_AA)
