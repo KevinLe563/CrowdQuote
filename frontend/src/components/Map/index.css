@@ -1,4 +1,17 @@
+.search-container {
+	position: absolute;
+	top: 10vh;
+	left: 40vw;
+	width: 20vw;
+	z-index: 1;
+}
+
 .map-container {
 	width: 100vw;
 	height: 80vh;
+}
+
+.combobox-input {
+	width: 100%;
+	padding: 0.5rem;
 }
