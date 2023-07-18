@@ -4,6 +4,11 @@
 	width: 100vw;
 	height: 80vh;
 
-	z-index: 1;
+	z-index: 2;
 	background-color: orange;
+}
+
+.graph {
+	width: 100vw;
+	height: 80vh;
 }
