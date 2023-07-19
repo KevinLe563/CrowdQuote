@@ -47,7 +47,7 @@ class ObjectDetector():
         model=YOLO(self.model)
 
         line_entrance_height = entrance_height if entrance_height else frame_height//2
-        height_offset = math.ceil(frame_height*0.1)
+        height_offset = math.ceil(frame_height*0.05)
         top_line_height = line_entrance_height - height_offset
         bottom_line_height = line_entrance_height + height_offset
 
@@ -61,7 +61,7 @@ class ObjectDetector():
                 self.drawEntranceExitLine(img, (0, top_line_height), (frame_width, top_line_height))
                 self.drawEntranceExitLine(img, (0, bottom_line_height), (frame_width, bottom_line_height))
                 cv2.putText(img, f'People Entering: {len(people_entered)}', (0, math.ceil(0.2*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
-                cv2.putText(img, f'People Exiting: {len(people_entered)}', (0, math.ceil(0.4*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
+                cv2.putText(img, f'People Exiting: {len(people_exited)}', (0, math.ceil(0.3*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
 
                 # check each bounding box -> draw a rectangle and label it
                 for r in results:
