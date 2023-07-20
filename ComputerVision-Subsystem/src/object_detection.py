@@ -9,6 +9,7 @@ import configparser
 
 
 # credit: https://github.com/MuhammadMoinFaisal/Computervisionprojects/blob/main/YOLOv8-CrashCourse/Running_YOLOv8_Video/YOLOv8_Video.py
+# credit: https://github.com/saimj7/People-Counting-in-Real-Time/tree/master
 
 class ObjectDetector():
     def __init__(self, config_path):
@@ -91,14 +92,16 @@ class ObjectDetector():
                                 # if the direction is negative (indicating the object
                                 # is moving up and entering) AND the centroid is above the center
                                 # line, count the object
-                                if direction < 0 and centroid[1] < line_entrance_height:
+                                # also make sure object started below the line to start
+                                if direction < 0 and centroid[1] < line_entrance_height and person_object.centroids[0][1] > line_entrance_height:
                                     total_entering += 1
                                     person_object.is_counted = True
 
                                 # if the direction is positive (indicating the object
                                 # is moving down and is exiting) AND the centroid is below the
                                 # center line, count the object
-                                elif direction > 0 and centroid[1] > line_entrance_height:
+                                # also make sure object started above the line to start
+                                elif direction > 0 and centroid[1] > line_entrance_height and person_object.centroids[0][1] < line_entrance_height:
                                     total_exiting += 1
                                     person_object.is_counted = True
                             
