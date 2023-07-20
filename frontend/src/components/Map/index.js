@@ -46,12 +46,8 @@ const Map = () => {
 			<div className="search-container">
 				<PlacesAutocomplete setSelected={setSelected} />
 			</div>
-			<div>
-				<GoogleMap
-					zoom={18}
-					center={center}
-					mapContainerClassName="map-container"
-				>
+			<div className="map-container">
+				<GoogleMap zoom={18} center={center} mapContainerClassName="map">
 					{markerPositions.map((pos) => (
 						<MarkerF
 							position={pos}
@@ -105,7 +101,11 @@ const PlacesAutocomplete = ({ setSelected }) => {
 				<ComboboxList>
 					{status == "OK" &&
 						data.map(({ place_id, description }) => (
-							<ComboboxOption key={place_id} value={description} />
+							<ComboboxOption
+								className="combobox-option"
+								key={place_id}
+								value={description}
+							/>
 						))}
 				</ComboboxList>
 			</ComboboxPopover>
