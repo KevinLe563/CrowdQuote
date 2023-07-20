@@ -16,9 +16,9 @@ import "./index.css";
 import Modal from "../Modal";
 
 const markerPositions = [
-	{ lat: 43.4723337, lng: -80.5461394 },
-	{ lat: 43.4721517, lng: -80.5439318 },
-	{ lat: 43.4745663, lng: -80.5327111 },
+	{ lat: 43.4723337, lng: -80.5461394, address: "address" },
+	{ lat: 43.4721517, lng: -80.5439318, address: "address" },
+	{ lat: 43.4745663, lng: -80.5327111, address: "address" },
 ];
 
 const Map = () => {
@@ -41,6 +41,23 @@ const Map = () => {
 
 	if (!isLoaded) return <div>Loading...</div>;
 
+	// reverse geocode to display address when hover
+	// const reverseGeocode = () => {
+	// 	const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`;
+	// 	fetch(url).then((response) =>
+	// 		response.json().then((location) => {
+	// 			console.log(location);
+	// 			//console.log(location.results[0].formatted_address);
+	// 			return location.results[0].formatted_address;
+	// 		})
+	// 	);
+	// };
+
+	// for (var i = 0; i < 3; i++) {
+	// 	console.log(markerPositions[i]["lat"], markerPositions[i]["lng"]);
+	// 	markerPositions[i]["address"] = reverseGeocode();
+	// }
+
 	return (
 		<div>
 			<div className="search-container">
@@ -51,6 +68,7 @@ const Map = () => {
 					{markerPositions.map((pos) => (
 						<MarkerF
 							position={pos}
+							title={pos["address"]}
 							onClick={() => {
 								setPositionModal(pos);
 								setOpenModal(true);
@@ -99,7 +117,7 @@ const PlacesAutocomplete = ({ setSelected }) => {
 			></ComboboxInput>
 			<ComboboxPopover>
 				<ComboboxList>
-					{status == "OK" &&
+					{status === "OK" &&
 						data.map(({ place_id, description }) => (
 							<ComboboxOption
 								className="combobox-option"
