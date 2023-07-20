@@ -1,14 +1,55 @@
 .modal-container {
 	position: absolute;
-	top: 10vh;
-	width: 100vw;
+	top: 15vh;
+	width: 90%;
 	height: 80vh;
 
 	z-index: 2;
-	background-color: orange;
+	background-color: rgb(241, 243, 244);
+
+	border-style: solid;
+	border-width: 0.3rem;
+	border-radius: 1rem;
+}
+
+.left-container {
+	width: 30%;
+	height: 100%;
+	float: left;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
+	border-style: solid;
+}
+
+.right-container {
+	width: 70%;
+	height: 100%;
+	float: right;
+
+	border-style: solid;
+}
+
+.graph-container {
+	padding-top: 5vh;
 }
 
 .graph {
-	width: 100vw;
-	height: 80vh;
+	width: 80%;
+	height: 60vh;
+	margin: auto;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.close-button {
+	width: 5vh;
+	height: 5vh;
+	float: right;
+
+	border-style: solid;
 }
