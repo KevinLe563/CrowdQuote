@@ -6,7 +6,6 @@ from address.models import AddressField
 
 # Location Model
 class Location(models.Model):
-    street_number = models.IntegerField
     address = AddressField()
     building_name = models.CharField(max_length=50)
 

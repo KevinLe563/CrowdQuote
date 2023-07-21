@@ -1,2 +1,4 @@
 django==4.2.3
 django-address==0.2.8
+python-dotenv==1.0.0
+python-decouple==3.8
