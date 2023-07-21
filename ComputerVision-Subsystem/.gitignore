@@ -1,2 +1,4 @@
 src/yolov3.weights
 yolo/*
+resources/output_videos/*.avi
+**/__pycache__/
