@@ -1,12 +1,16 @@
 from django.db import models
-from address.models import AddressField
-
+from django.core.validators import RegexValidator
 # Create your models here.
 # Django automatically adds id/primary key field
 
 # Location Model
 class Location(models.Model):
-    address = AddressField()
+    civic_number = models.PositiveIntegerField()
+    street_name= models.CharField(max_length=100)
+    postal_code = postal_code = models.CharField(
+        max_length=7,
+        validators=[RegexValidator('[A-Z]\d[A-Z]\s\d[A-Z]\d')],
+    )
     building_name = models.CharField(max_length=50)
 
 # Camera Model
