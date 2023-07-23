@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, mixins
 from rest_framework.response import Response
-from .serializers import PopulationSerializer, LocationSerializer
+from .serializers import PopulationSerializer, LocationSerializer, CameraSerializer
 from .models import Population, Location, Camera
 
 # Create your views here.
@@ -13,11 +13,8 @@ from .models import Population, Location, Camera
 class LocationView(viewsets.ModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
-    # def retrieve(self, request, pk=None):
-    #     location = get_object_or_404(self.queryset, pk=pk)
-    #     serializer = LocationSerializer
-    #     return Response(serializer.data)
-    
-    # def create(self, request):
-    #     pass
+
+class CameraView(viewsets.ModelViewSet):
+    queryset = Camera.objects.all()
+    serializer_class = CameraSerializer
 

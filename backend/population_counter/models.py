@@ -12,6 +12,8 @@ class Location(models.Model):
         validators=[RegexValidator('[A-Z]\d[A-Z]\s\d[A-Z]\d')],
     )
     building_name = models.CharField(max_length=50)
+    longitude = models.FloatField()
+    latitude = models.FloatField()
 
 # Camera Model
 class Camera(models.Model):
