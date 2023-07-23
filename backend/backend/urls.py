@@ -22,7 +22,6 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 # router.register(r'location', views.LocationView, 'location')
 router.register(r'camera', views.CameraView, 'camera')
-router.register(r'population', views.PopulationView, 'population')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,5 +29,9 @@ urlpatterns = [
 ]
 
 urlpatterns += [
-    path('api/location/latlng/', views.LocationLatLngView.as_view(), name='get-location-latlng'),
+    path('api/location/', views.LocationView.as_view(), name='get-location'),
+]
+
+urlpatterns += [
+    path('api/population/', views.PopulationView.as_view(), name='population'),
 ]
