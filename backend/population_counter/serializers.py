@@ -5,7 +5,7 @@ from .models import Population, Location, Camera
 class PopulationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Population
-        fields = ("id", "people_count", "timestamp", "location_id")
+        fields = ("location_id", "people_count", "timestamp")
         lookup_field = "location_id"
 
     
