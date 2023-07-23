@@ -12,14 +12,15 @@ class Location(models.Model):
         validators=[RegexValidator('[A-Z]\d[A-Z]\s\d[A-Z]\d')],
     )
     building_name = models.CharField(max_length=50)
-    longitude = models.FloatField()
-    latitude = models.FloatField()
+    room = models.CharField(max_length=50)
+    lng = models.DecimalField(decimal_places=7, max_digits=10)
+    lat = models.DecimalField(decimal_places=7, max_digits=10)
 
 # Camera Model
 class Camera(models.Model):
     # each camera must monitor 1 location
     # if location is deleted, set the location_id to null. Camera can stay in database
-    location_id = models.ForeignKey(Location, null=True, on_delete=models.SET_NULL) 
+    location_id = models.ForeignKey(Location, null=True, on_delete=models.SET_NULL)
 
 # Population Model
 class Population(models.Model):

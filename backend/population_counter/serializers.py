@@ -5,16 +5,17 @@ from .models import Population, Location, Camera
 class PopulationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Population
-        fields = ("id", "people_count", "timestamp")
+        fields = ("id", "people_count", "timestamp", "location_id")
+        lookup_field = "location_id"
 
     
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
-        fields = ("id", "building_name", "civic_number", "street_name", "postal_code", "longitude", "latitude")
+        fields = '__all__'
 
 class CameraSerializer(serializers.ModelSerializer):
-    location_id = serializers.RelatedField(source='location', read_only='true')
     class Meta:
         model = Camera
         fields = ("id", "location_id")
+        lookup_field = "location_id"

@@ -20,10 +20,15 @@ from population_counter import views
 from rest_framework import routers
 
 router = routers.DefaultRouter()
-router.register(r'location', views.LocationView, 'location')
+# router.register(r'location', views.LocationView, 'location')
 router.register(r'camera', views.CameraView, 'camera')
+router.register(r'population', views.PopulationView, 'population')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+]
+
+urlpatterns += [
+    path('api/location/latlng/', views.LocationLatLngView.as_view(), name='get-location-latlng'),
 ]
