@@ -32,7 +32,7 @@ class CameraView(viewsets.ModelViewSet):
 
 class PopulationView(views.APIView):
     def post(self, request, format=None):
-        serializer = PopulationSerializer(data=request.query_params)
+        serializer = PopulationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

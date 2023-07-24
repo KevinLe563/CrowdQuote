@@ -7,3 +7,4 @@ class LocationAdmin(admin.ModelAdmin):
     list_display = ("building_name", "civic_number", "street_name", "postal_code", "lng", "lat")
 
 admin.site.register(Location, LocationAdmin)
+admin.site.register(Population)
