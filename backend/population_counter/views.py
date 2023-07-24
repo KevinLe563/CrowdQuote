@@ -16,8 +16,9 @@ from .models import Population, Location, Camera
 
 class LocationView(views.APIView):
     def get(self, request, pk=None):
-        lng = request.data['lng']
-        lat = request.data['lat']
+        print(request.query_params)
+        lng = request.query_params['lng']
+        lat = request.query_params['lat']
         try:
             qs = Location.objects.all().filter(lng=lng, lat=lat).first()
             serializer = LocationSerializer(qs)
@@ -31,7 +32,7 @@ class CameraView(viewsets.ModelViewSet):
 
 class PopulationView(views.APIView):
     def post(self, request, format=None):
-        serializer = PopulationSerializer(data=request.data)
+        serializer = PopulationSerializer(data=request.query_params)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -39,7 +40,7 @@ class PopulationView(views.APIView):
     
     def get(self, request):
         # return population in the last 72 hours
-        location_id = request.data["location_id"]
+        location_id = request.query_params["location_id"]
         qs = Population.objects.filter(location_id=location_id, timestamp__gte=timezone.now()-timezone.timedelta(days=3)).order_by("timestamp")
         serializer = PopulationSerializer(qs, many=True)
         return Response(serializer.data)

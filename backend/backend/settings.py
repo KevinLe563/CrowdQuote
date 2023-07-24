@@ -29,9 +29,11 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 # Whitelist frontend react port
-CORS_ORIGIN_WHITELIST = (
-    'http://localhost:3000',
-)
+# CORS_ORIGIN_WHITELIST = (
+#     'http://localhost:3000',
+# )
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 # Application definition
 
