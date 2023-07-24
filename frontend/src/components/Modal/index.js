@@ -39,10 +39,8 @@ const Modal = ({ open, onClose, position }) => {
 		await axios
 			.get("http://localhost:8000/api/location/", {
 				params: {
-					lat: 80.788,
-					lng: 45.34,
-					// lat: position.lat,
-					// lng: position.lng,
+					lat: position["lat"],
+					lng: position["lng"],
 				},
 			})
 			.then((res) => {
