@@ -5,4 +5,6 @@ Please go to https://pjreddie.com/media/files/yolov3.weights to download the wei
 
 ### YOLOv8
 
-1. Run main, it should automatically download the weights if you don't have them locally. Output video will be saved to /resources/output_videos/output.avi
+1. pip install -r requirements.txt in the ComputerVision-Subsystem directory
+
+2. Run main, it should automatically download the weights if you don't have them locally (run main while you are in ComputerVision-Subsystem subdirectory). Output video will be saved to /resources/output_videos/output.avi
