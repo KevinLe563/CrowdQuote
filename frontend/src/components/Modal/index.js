@@ -103,7 +103,6 @@ const Modal = ({ open, onClose, position }) => {
 	// console.log(populationData.data.map((obj) => obj.date_time));
 
 	const data = {
-		// labels: ["2022-11-01", "2022-11-02", "2022-11-03", "2022-11-04"],
 		labels: populationData.map((obj) => obj.timestamp),
 		datasets: [
 			{
@@ -166,7 +165,10 @@ const Modal = ({ open, onClose, position }) => {
 					<div className="graph">
 						<Line data={data} options={options}></Line>
 					</div>
-					<p>Current Population: 23</p>
+					<p>
+						Current Population:{" "}
+						{populationData[populationData.length - 1].people_count}
+					</p>
 				</div>
 			</div>
 		</div>
