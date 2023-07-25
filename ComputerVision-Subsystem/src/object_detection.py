@@ -25,7 +25,7 @@ class ObjectDetector():
         self.tracker = CentroidTracker()
         self.model = str(Path(self.config['YOLO']['yolov8model']))
         self.output_video_path = str(Path(config_path, self.config['VIDEOS']['output_videos']).resolve())
-        self.server_url = str(Path(self.config['SERVER']['population_POST']))
+        self.server_url = "http://127.0.0.1:8000/api/population/"
         self.classes = [
                 "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
                 "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
@@ -55,7 +55,7 @@ class ObjectDetector():
         line_entrance_height = entrance_height if entrance_height else frame_height//2
 
         try:
-            self.population_scheduler.enter(1, 1, self.POST_scheduler, (self.POST_scheduler,))
+            self.population_scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (self.population_scheduler,))
             while True:
                 self.population_scheduler.run(blocking=False)
                 success, img = video_capture.read()
@@ -167,4 +167,7 @@ class ObjectDetector():
         scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (scheduler,))
 
         # send post req
-        print("WORKING?????????????? ============")
+        people_count = max(0, self.total_entering - self.total_exiting)
+        print("Sending POST request!")
+        print(self.server_url)
+        update_population(self.server_url, self.location_id, people_count)
