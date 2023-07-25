@@ -11,6 +11,6 @@ config.read(config_path)
 
 image_path = str(Path(config_path, config['VIDEOS']['video6']).resolve())
 
-objectDetector = ObjectDetector(config_path)
+objectDetector = ObjectDetector(config_path, 1)
 
 objectDetector.detectObject(image_path)
