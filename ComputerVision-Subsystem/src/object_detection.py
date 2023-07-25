@@ -2,23 +2,30 @@ from ultralytics import YOLO
 from pathlib import Path
 from object_tracking import CentroidTracker
 from person import PersonObject
+from http_django import update_population
 import numpy as np
 import cv2
 import math
 import configparser
+import sched
+import time
 
 
 # credit: https://github.com/MuhammadMoinFaisal/Computervisionprojects/blob/main/YOLOv8-CrashCourse/Running_YOLOv8_Video/YOLOv8_Video.py
 # credit: https://github.com/saimj7/People-Counting-in-Real-Time/tree/master
 
 class ObjectDetector():
-    def __init__(self, config_path):
+    def __init__(self, config_path, location_id, time_per_POST=60):
         self.config = configparser.ConfigParser()
         self.config.read(config_path)
+        self.location_id = location_id
+        self.time_per_POST = time_per_POST
+        self.population_scheduler = sched.scheduler(time.time, time.sleep)
 
         self.tracker = CentroidTracker()
         self.model = str(Path(self.config['YOLO']['yolov8model']))
         self.output_video_path = str(Path(config_path, self.config['VIDEOS']['output_videos']).resolve())
+        self.server_url = str(Path(self.config['SERVER']['population_POST']))
         self.classes = [
                 "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
                 "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
@@ -32,11 +39,11 @@ class ObjectDetector():
                 "teddy bear", "hair drier", "toothbrush"
             ] # all avaialble classes of the model, only person is used
         
+        self.tracked_persons = {}
+        self.total_entering = 0
+        self.total_exiting = 0
+        
     def detectObject(self, video_path, entrance_height=None, centroid_radius=5):
-        tracked_persons = {}
-        total_entering = 0
-        total_exiting = 0
-
         video_capture=cv2.VideoCapture(video_path)
 
         frame_width=int(video_capture.get(3))
@@ -48,15 +55,16 @@ class ObjectDetector():
         line_entrance_height = entrance_height if entrance_height else frame_height//2
 
         try:
-            success, img = video_capture.read()
-            while success:
+            self.population_scheduler.enter(1, 1, self.POST_scheduler, (self.POST_scheduler,))
+            while True:
+                self.population_scheduler.run(blocking=False)
                 success, img = video_capture.read()
                 # do frame by frame for video
                 results=model(img,stream=True)
                 # draw a line in the center of the image
                 self.drawEntranceExitLine(img, (0, line_entrance_height), (frame_width, line_entrance_height))
-                cv2.putText(img, f'People Entering: {total_entering}', (0, math.ceil(0.2*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
-                cv2.putText(img, f'People Exiting: {total_exiting}', (0, math.ceil(0.3*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
+                cv2.putText(img, f'People Entering: {self.total_entering}', (0, math.ceil(0.2*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
+                cv2.putText(img, f'People Exiting: {self.total_exiting}', (0, math.ceil(0.3*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
 
                 # check each bounding box -> draw a rectangle and label it
                 for r in results:
@@ -72,7 +80,7 @@ class ObjectDetector():
                     
                     person_objects = self.utiliseTracker(person_rects)
                     for (objectID, centroid) in person_objects.items():
-                        person_object = tracked_persons.get(objectID, None)
+                        person_object = self.tracked_persons.get(objectID, None)
 
                         if not person_object:
                             person_object = PersonObject(objectID, centroid)
@@ -94,7 +102,7 @@ class ObjectDetector():
                                 # line, count the object
                                 # also make sure object started below the line to start
                                 if direction < 0 and centroid[1] < line_entrance_height and person_object.centroids[0][1] > line_entrance_height:
-                                    total_entering += 1
+                                    self.total_entering += 1
                                     person_object.is_counted = True
 
                                 # if the direction is positive (indicating the object
@@ -102,18 +110,16 @@ class ObjectDetector():
                                 # center line, count the object
                                 # also make sure object started above the line to start
                                 elif direction > 0 and centroid[1] > line_entrance_height and person_object.centroids[0][1] < line_entrance_height:
-                                    total_exiting += 1
+                                    self.total_exiting += 1
                                     person_object.is_counted = True
                             
                         # store the trackable object in our dictionary
-                        tracked_persons[objectID] = person_object
-                        print(person_object.centroids[0])
+                        self.tracked_persons[objectID] = person_object
                         self.labelObject(img, self.classes[0], person_object)
                                     
         
                 output_video.write(img)
                 cv2.imshow("Image", img)
-                print('===')
                 if cv2.waitKey(1) & 0xFF==ord('q'):
                     break
         except Exception as e:
@@ -149,5 +155,16 @@ class ObjectDetector():
         # print(person_objects)
         return self.tracker.update(person_objects)
         
+    # used to reset the system when the camera is off
+    def reset(self):
+        self.tracker.reset()
+        self.tracked_persons = {}
+        self.total_entering = 0
+        self.total_exiting = 0
 
-    
+    def POST_scheduler(self, scheduler):
+        # schedule the next call first
+        scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (scheduler,))
+
+        # send post req
+        print("WORKING?????????????? ============")

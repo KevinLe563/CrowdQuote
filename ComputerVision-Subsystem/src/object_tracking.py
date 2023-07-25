@@ -163,3 +163,8 @@ class CentroidTracker:
 
 		# return the set of trackable objects
 		return self.objects
+
+	def reset(self):
+		self.nextObjectID = 0
+		self.objects.clear()
+		self.disappeared.clear()
