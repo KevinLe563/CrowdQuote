@@ -1,6 +1,7 @@
 # import the necessary packages
 from scipy.spatial import distance as dist
 from collections import OrderedDict
+from person_state import PersonState
 import numpy as np
 
 # credit: https://github.com/saimj7/People-Counting-in-Real-Time/blob/master/tracker/centroidtracker.py
@@ -14,6 +15,10 @@ class CentroidTracker:
 		self.nextObjectID = 0
 		self.objects = OrderedDict()
 		self.disappeared = OrderedDict()
+		self.state = OrderedDict()
+  
+		self.entranceCoord1 = None
+		self.entranceCoord2 = None
 
 		# store the number of maximum consecutive frames a given
 		# object is allowed to be marked as "disappeared" until we
@@ -24,19 +29,35 @@ class CentroidTracker:
 		# an object -- if the distance is larger than this maximum
 		# distance we'll start to mark the object as "disappeared"
 		self.maxDistance = maxDistance
+  
+		self.total_entering = 0
+		self.total_exiting = 0
 
 	def register(self, centroid):
 		# when registering an object we use the next available object
 		# ID to store the centroid
 		self.objects[self.nextObjectID] = centroid
 		self.disappeared[self.nextObjectID] = 0
+
+		if self.isWithinEntranceBounds(centroid):
+			self.total_exiting += 1
+		self.state[self.nextObjectID] = PersonState.EXITING if self.isWithinEntranceBounds(centroid) else PersonState.DETECTED
 		self.nextObjectID += 1
 
 	def deregister(self, objectID):
 		# to deregister an object ID we delete the object ID from
 		# both of our respective dictionaries
+		centroid = self.objects[objectID]
+
+		if self.isWithinEntranceBounds(centroid):
+			self.total_entering += 1
+		self.state[object] = PersonState.REMOVED
 		del self.objects[objectID]
 		del self.disappeared[objectID]
+  
+	def isWithinEntranceBounds(self, coord):
+		return coord[0] > self.entranceCoord1[0] and coord[0] < self.entranceCoord2[0] \
+            and coord[1] > self.entranceCoord1[1] and coord[1] < self.entranceCoord2[1]
 
 	def update(self, rects):
 		# check to see if the list of input bounding box rectangles
@@ -124,6 +145,11 @@ class CentroidTracker:
 				# counter
 				objectID = objectIDs[row]
 				self.objects[objectID] = inputCentroids[col]
+    
+				if self.isWithinEntranceBounds(self.objects[objectID]) and self.state[objectID] != PersonState.EXITING:
+					self.state[objectID] = PersonState.ENTERING
+				else:
+					self.state[objectID] = PersonState.DETECTED
 				self.disappeared[objectID] = 0
 
 				# indicate that we have examined each of the row and
@@ -166,5 +192,11 @@ class CentroidTracker:
 
 	def reset(self):
 		self.nextObjectID = 0
+		self.total_entering = 0
+		self.total_exiting = 0  
 		self.objects.clear()
 		self.disappeared.clear()
+  
+	def updateEntranceBounds(self, coord1, coord2):
+		self.entranceCoord1 = coord1
+		self.entranceCoord2 = coord2

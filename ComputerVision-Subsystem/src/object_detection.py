@@ -3,6 +3,7 @@ from pathlib import Path
 from object_tracking import CentroidTracker
 from person import PersonObject
 from http_django import update_population
+from person_state import PersonState
 import numpy as np
 import cv2
 import math
@@ -40,8 +41,6 @@ class ObjectDetector():
             ] # all avaialble classes of the model, only person is used
         
         self.tracked_persons = {}
-        self.total_entering = 0
-        self.total_exiting = 0
         
     def detectObject(self, video_path, entrance_height=None, centroid_radius=5):
         video_capture=cv2.VideoCapture(video_path)
@@ -49,6 +48,9 @@ class ObjectDetector():
         frame_width=int(video_capture.get(3))
         frame_height = int(video_capture.get(4))
 
+        entranceCoord1 = (frame_width//5, 0)
+        entranceCoord2 = (4*frame_width//5, 100)
+        self.tracker.updateEntranceBounds(entranceCoord1, entranceCoord2)
         output_video=cv2.VideoWriter(f'{self.output_video_path}/output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frame_width, frame_height))
         model=YOLO(self.model)
 
@@ -62,9 +64,11 @@ class ObjectDetector():
                 # do frame by frame for video
                 results=model(img,stream=True)
                 # draw a line in the center of the image
-                self.drawEntranceExitLine(img, (0, line_entrance_height), (frame_width, line_entrance_height))
-                cv2.putText(img, f'People Entering: {self.total_entering}', (0, math.ceil(0.2*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
-                cv2.putText(img, f'People Exiting: {self.total_exiting}', (0, math.ceil(0.3*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
+                # self.drawEntranceExitLine(img, (0, line_entrance_height), (frame_width, line_entrance_height))
+                self.drawEntranceExitBox(img, entranceCoord1, entranceCoord2)
+                
+                cv2.putText(img, f'People Entering: {self.tracker.total_entering}', (0, math.ceil(0.2*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
+                cv2.putText(img, f'People Exiting: {self.tracker.total_exiting}', (0, math.ceil(0.3*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
 
                 # check each bounding box -> draw a rectangle and label it
                 for r in results:
@@ -83,36 +87,7 @@ class ObjectDetector():
                         person_object = self.tracked_persons.get(objectID, None)
 
                         if not person_object:
-                            person_object = PersonObject(objectID, centroid)
-                        else:
-                            # the difference between the y-coordinate of the *current*
-                            # centroid and the mean of *previous* centroids will tell
-                            # us in which direction the object is moving (negative for
-                            # 'up' and positive for 'down')
-
-                            # c[1] is the y value of centroid
-                            y = [c[1] for c in person_object.centroids]
-                            direction = centroid[1] - np.mean(y)
-                            person_object.centroids.append(centroid)
-
-                            # check to see if the object has been counted or not
-                            if not person_object.is_counted:
-                                # if the direction is negative (indicating the object
-                                # is moving up and entering) AND the centroid is above the center
-                                # line, count the object
-                                # also make sure object started below the line to start
-                                if direction < 0 and centroid[1] < line_entrance_height and person_object.centroids[0][1] > line_entrance_height:
-                                    self.total_entering += 1
-                                    person_object.is_counted = True
-
-                                # if the direction is positive (indicating the object
-                                # is moving down and is exiting) AND the centroid is below the
-                                # center line, count the object
-                                # also make sure object started above the line to start
-                                elif direction > 0 and centroid[1] > line_entrance_height and person_object.centroids[0][1] < line_entrance_height:
-                                    self.total_exiting += 1
-                                    person_object.is_counted = True
-                            
+                            person_object = PersonObject(objectID, centroid)    
                         # store the trackable object in our dictionary
                         self.tracked_persons[objectID] = person_object
                         self.labelObject(img, self.classes[0], person_object)
@@ -132,11 +107,14 @@ class ObjectDetector():
     def drawEntranceExitLine(self, img, coord1, coord2):
         cv2.line(img, coord1, coord2, (0, 255, 0), thickness=2)
 
+    def drawEntranceExitBox(self, img, coord1, coord2):
+        cv2.rectangle(img, coord1, coord2, (0, 255, 0), thickness=2)
+
     def labelObject(self, img, class_name, person_object, color=(255,0,255)):
         # x1,y1,x2,y2,id = person_object
         # cv2.rectangle(img, (x1,y1), (x2,y2), color, 1)
         
-        label=f'{class_name} {person_object.objectID}'
+        label=f'{class_name} {person_object.objectID} {self.tracker.state[person_object.objectID]}'
         # t_size = cv2.getTextSize(label, 0, fontScale=1, thickness=1)[0]
         # c2 = x1 + t_size[0], y1 - t_size[1] - 3
         # bounding box
@@ -159,15 +137,13 @@ class ObjectDetector():
     def reset(self):
         self.tracker.reset()
         self.tracked_persons = {}
-        self.total_entering = 0
-        self.total_exiting = 0
 
     def POST_scheduler(self, scheduler):
         # schedule the next call first
         scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (scheduler,))
 
         # send post req
-        people_count = max(0, self.total_entering - self.total_exiting)
+        people_count = max(0, self.tracker.total_entering - self.tracker.total_exiting)
         print("Sending POST request!")
         print(self.server_url)
         update_population(self.server_url, self.location_id, people_count)
