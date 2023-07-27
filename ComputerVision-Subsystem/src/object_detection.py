@@ -41,6 +41,7 @@ class ObjectDetector():
             ] # all avaialble classes of the model, only person is used
         
         self.tracked_persons = {}
+        self.entrance_points = []
         
     def detectObject(self, video_path, entrance_height=None, centroid_radius=5):
         video_capture=cv2.VideoCapture(video_path)
@@ -61,6 +62,8 @@ class ObjectDetector():
             while True:
                 self.population_scheduler.run(blocking=False)
                 success, img = video_capture.read()
+                cv2.namedWindow("Image")
+                cv2.setMouseCallback('Image', self.detect_click)
                 # do frame by frame for video
                 results=model(img,stream=True)
                 # draw a line in the center of the image
@@ -88,6 +91,8 @@ class ObjectDetector():
 
                         if not person_object:
                             person_object = PersonObject(objectID, centroid)    
+                        else:
+                            person_object.centroids.append(centroid)
                         # store the trackable object in our dictionary
                         self.tracked_persons[objectID] = person_object
                         self.labelObject(img, self.classes[0], person_object)
@@ -108,7 +113,9 @@ class ObjectDetector():
         cv2.line(img, coord1, coord2, (0, 255, 0), thickness=2)
 
     def drawEntranceExitBox(self, img, coord1, coord2):
-        cv2.rectangle(img, coord1, coord2, (0, 255, 0), thickness=2)
+        # cv2.rectangle(img, coord1, coord2, (0, 255, 0), thickness=2)
+        polygon = [np.int32(self.entrance_points)]
+        cv2.polylines(img, polygon, False, (0, 255, 0), thickness=2)
 
     def labelObject(self, img, class_name, person_object, color=(255,0,255)):
         # x1,y1,x2,y2,id = person_object
@@ -126,6 +133,7 @@ class ObjectDetector():
         # center_y = y1 + bounding_box_height//2
         cv2.circle(img, person_object.centroids[-1], 5, color, cv2.FILLED)
         # class label
+
         cv2.putText(img, label, (person_object.centroids[-1][0], person_object.centroids[-1][1]-2), 0, 1, (255, 255, 255), thickness=1,lineType=cv2.LINE_AA)
     
 
@@ -147,3 +155,11 @@ class ObjectDetector():
         print("Sending POST request!")
         print(self.server_url)
         update_population(self.server_url, self.location_id, people_count)
+
+    def detect_click(self, event,x,y,flags,param):
+        """Called whenever user left clicks"""
+        if event == cv2.EVENT_LBUTTONDOWN:
+            print(f'I saw you click at {x},{y}')
+            if len(self.entrance_points) > 4:
+                self.entrance_points.pop(0)
+            self.entrance_points.append([x, y])
