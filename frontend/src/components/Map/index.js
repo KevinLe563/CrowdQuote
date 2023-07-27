@@ -16,9 +16,9 @@ import "./index.css";
 import Modal from "../Modal";
 
 const markerPositions = [
-	{ lat: 43.4723337, lng: -80.5461394, address: "address" },
-	{ lat: 43.4721517, lng: -80.5439318, address: "address" },
-	{ lat: 43.4745663, lng: -80.5327111, address: "address" },
+	{ lat: 43.4723337, lng: -80.5461394, address: "PAC" },
+	{ lat: 43.4721517, lng: -80.5439318, address: "M3" },
+	{ lat: 43.4716498, lng: -80.5407484, address: "E3" },
 ];
 
 const Map = () => {
@@ -34,8 +34,7 @@ const Map = () => {
 	// geocoding (address -> lat/long)
 
 	const center = useMemo(
-		() =>
-			selected ? selected : { lat: 43.47234048997899, lng: -80.54611173191944 },
+		() => (selected ? selected : { lat: 43.4723337, lng: -80.5461394 }),
 		[selected]
 	);
 

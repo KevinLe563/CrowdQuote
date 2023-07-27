@@ -167,7 +167,9 @@ const Modal = ({ open, onClose, position }) => {
 					</div>
 					<p>
 						Current Population:{" "}
-						{populationData[populationData.length - 1].people_count}
+						{populationData.length > 0
+							? populationData[populationData.length - 1].people_count
+							: 0}
 					</p>
 				</div>
 			</div>
