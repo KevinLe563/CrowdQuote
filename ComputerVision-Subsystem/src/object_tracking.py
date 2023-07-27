@@ -3,6 +3,7 @@ from scipy.spatial import distance as dist
 from collections import OrderedDict
 from person_state import PersonState
 import numpy as np
+import cv2
 
 # credit: https://github.com/saimj7/People-Counting-in-Real-Time/blob/master/tracker/centroidtracker.py
 
@@ -32,6 +33,7 @@ class CentroidTracker:
   
 		self.total_entering = 0
 		self.total_exiting = 0
+		self.entrance_points = None
 
 	def register(self, centroid):
 		# when registering an object we use the next available object
@@ -56,8 +58,7 @@ class CentroidTracker:
 		del self.disappeared[objectID]
   
 	def isWithinEntranceBounds(self, coord):
-		return coord[0] > self.entranceCoord1[0] and coord[0] < self.entranceCoord2[0] \
-            and coord[1] > self.entranceCoord1[1] and coord[1] < self.entranceCoord2[1]
+		return cv2.pointPolygonTest(self.entrance_points, (int(coord[0]), int(coord[1])), False) != -1.0
 
 	def update(self, rects):
 		# check to see if the list of input bounding box rectangles
@@ -197,6 +198,5 @@ class CentroidTracker:
 		self.objects.clear()
 		self.disappeared.clear()
   
-	def updateEntranceBounds(self, coord1, coord2):
-		self.entranceCoord1 = coord1
-		self.entranceCoord2 = coord2
+	def updateEntranceBounds(self, entrance_points):
+		self.entrance_points = entrance_points

@@ -40,30 +40,31 @@ class ObjectDetector():
                 "teddy bear", "hair drier", "toothbrush"
             ] # all avaialble classes of the model, only person is used
         
+        self.pts = []
         self.tracked_persons = {}
-        self.entrance_points = []
+        self.entrance_points = None
         
     def detectObject(self, video_path, entrance_height=None, centroid_radius=5):
         video_capture=cv2.VideoCapture(video_path)
-
-        frame_width=int(video_capture.get(3))
-        frame_height = int(video_capture.get(4))
+        frame_width=1080
+        frame_height=720
 
         entranceCoord1 = (frame_width//5, 0)
         entranceCoord2 = (4*frame_width//5, 100)
-        self.tracker.updateEntranceBounds(entranceCoord1, entranceCoord2)
+
         output_video=cv2.VideoWriter(f'{self.output_video_path}/output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frame_width, frame_height))
         model=YOLO(self.model)
-
-        line_entrance_height = entrance_height if entrance_height else frame_height//2
 
         try:
             self.population_scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (self.population_scheduler,))
             while True:
                 self.population_scheduler.run(blocking=False)
                 success, img = video_capture.read()
+                img = cv2.resize(img, (frame_width, frame_height))
+  
                 cv2.namedWindow("Image")
-                cv2.setMouseCallback('Image', self.detect_click)
+
+                self.drawBounds(img)
                 # do frame by frame for video
                 results=model(img,stream=True)
                 # draw a line in the center of the image
@@ -114,8 +115,7 @@ class ObjectDetector():
 
     def drawEntranceExitBox(self, img, coord1, coord2):
         # cv2.rectangle(img, coord1, coord2, (0, 255, 0), thickness=2)
-        polygon = [np.int32(self.entrance_points)]
-        cv2.polylines(img, polygon, False, (0, 255, 0), thickness=2)
+        cv2.polylines(img, [self.entrance_points], True, (0, 255, 0), thickness=2)
 
     def labelObject(self, img, class_name, person_object, color=(255,0,255)):
         # x1,y1,x2,y2,id = person_object
@@ -160,6 +160,15 @@ class ObjectDetector():
         """Called whenever user left clicks"""
         if event == cv2.EVENT_LBUTTONDOWN:
             print(f'I saw you click at {x},{y}')
-            if len(self.entrance_points) > 4:
-                self.entrance_points.pop(0)
-            self.entrance_points.append([x, y])
+            self.pts.append([x, y])
+
+    def drawBounds(self, img):
+        if len(self.pts) >= 4:
+            return
+        cv2.imshow("Image", img)
+        cv2.setMouseCallback('Image', self.detect_click)
+        while len(self.pts) < 4:
+            k = cv2.waitKeyEx(1)
+        cv2.setMouseCallback('Image', lambda *args : None)
+        self.entrance_points = np.array(self.pts)
+        self.tracker.updateEntranceBounds(self.entrance_points)
