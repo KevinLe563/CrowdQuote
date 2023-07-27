@@ -44,7 +44,7 @@ class ObjectDetector():
         self.total_exiting = 0
         
     def detectObject(self, video_path, entrance_height=None, centroid_radius=5):
-        video_capture=cv2.VideoCapture(video_path)
+        video_capture=cv2.VideoCapture("rtsp://192.168.31.142:8554/stream1")
 
         frame_width=int(video_capture.get(3))
         frame_height = int(video_capture.get(4))
@@ -53,12 +53,15 @@ class ObjectDetector():
         model=YOLO(self.model)
 
         line_entrance_height = entrance_height if entrance_height else frame_height//2
-
+        img_count = 0
         try:
             self.population_scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (self.population_scheduler,))
             while True:
                 self.population_scheduler.run(blocking=False)
                 success, img = video_capture.read()
+                img_count += 1
+                if (img_count % 3 != 0):
+                    continue 
                 # do frame by frame for video
                 results=model(img,stream=True)
                 # draw a line in the center of the image
