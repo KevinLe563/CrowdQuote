@@ -66,7 +66,7 @@ class ObjectDetector():
 
                 self.drawBounds(img)
                 # do frame by frame for video
-                results=model(img,stream=True)
+                results=model.predict(img, stream=True, classes=[0])
                 # draw a line in the center of the image
                 # self.drawEntranceExitLine(img, (0, line_entrance_height), (frame_width, line_entrance_height))
                 self.drawEntranceExitBox(img, entranceCoord1, entranceCoord2)
@@ -80,8 +80,10 @@ class ObjectDetector():
                     boxes=r.boxes
                     for box in boxes:
                         object_class=int(box.cls[0])
+                        conf=math.ceil((box.conf[0]*100))/100
+                        print("Confidence: ", conf)
                         class_name=self.classes[object_class]
-                        if class_name == self.classes[0]: # check if it's a person, ignore other objects
+                        if class_name == self.classes[0] and conf >= 0.7: # check if it's a person, ignore other objects
                             x1, y1, x2, y2 = box.xyxy[0]
                             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                             person_rects.append((x1, y1, x2, y2))

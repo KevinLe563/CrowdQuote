@@ -10,7 +10,7 @@ config_path = str((Path(__file__).parent / "config.ini").resolve())
 config = configparser.ConfigParser()
 config.read(config_path)
 
-image_path = str(Path(config_path, config['VIDEOS']['video6']).resolve())
+image_path = str(Path(config_path, config['VIDEOS']['video11']).resolve())
 image = cv2.imread(image_path)
 
 # def onClick(event,x,y,flags,param):
