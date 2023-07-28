@@ -45,7 +45,7 @@ class ObjectDetector():
         self.entrance_points = None
         
     def detectObject(self, video_path, entrance_height=None, centroid_radius=5):
-        video_capture=cv2.VideoCapture(video_path)
+        video_capture=cv2.VideoCapture("C:\\Users\\lekev\\OneDrive - University of Waterloo\\University\\FYDP\\CrowdQuote\\ComputerVision-Subsystem\\resources\\test3.ogg")
         frame_width=1080
         frame_height=720
 
@@ -65,7 +65,7 @@ class ObjectDetector():
                 cv2.namedWindow("Image")
                 self.drawBounds(img)
                 img_count += 1
-                if (img_count % 3 != 0):
+                if (img_count % 5 != 0):
                     continue 
                 # do frame by frame for video
                 results=model.predict(img, stream=True, classes=[0])

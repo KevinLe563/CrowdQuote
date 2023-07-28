@@ -8,7 +8,7 @@ import cv2
 # credit: https://github.com/saimj7/People-Counting-in-Real-Time/blob/master/tracker/centroidtracker.py
 
 class CentroidTracker:
-	def __init__(self, maxDisappeared=15, maxDistance=70):
+	def __init__(self, maxDisappeared=5, maxDistance=85):
 		# initialize the next unique object ID along with two ordered
 		# dictionaries used to keep track of mapping a given object
 		# ID to its centroid and number of consecutive frames it has
@@ -146,8 +146,10 @@ class CentroidTracker:
 				# counter
 				objectID = objectIDs[row]
 				self.objects[objectID] = inputCentroids[col]
-    
-				if self.isWithinEntranceBounds(self.objects[objectID]) and self.state[objectID] != PersonState.EXITING:
+				
+				if self.isWithinEntranceBounds(self.objects[objectID]) and self.state[objectID] == PersonState.EXITING:
+					self.state[objectID] = PersonState.EXITING
+				elif self.isWithinEntranceBounds(self.objects[objectID]) and self.state[objectID] != PersonState.EXITING:
 					self.state[objectID] = PersonState.ENTERING
 				else:
 					self.state[objectID] = PersonState.DETECTED
