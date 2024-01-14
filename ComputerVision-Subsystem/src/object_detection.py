@@ -9,6 +9,7 @@ import cv2
 import math
 import configparser
 import sched
+import os
 import time
 
 
@@ -16,7 +17,7 @@ import time
 # credit: https://github.com/saimj7/People-Counting-in-Real-Time/tree/master
 
 class ObjectDetector():
-    def __init__(self, config_path, location_id, time_per_POST=60):
+    def __init__(self, config_path, location_id, time_per_POST=5):
         self.config = configparser.ConfigParser()
         self.config.read(config_path)
         self.location_id = location_id
@@ -42,43 +43,35 @@ class ObjectDetector():
         
         self.pts = []
         self.tracked_persons = {}
+        self.people_count = 0
         self.entrance_points = None
-        
+
     def detectObject(self, video_path, entrance_height=None, centroid_radius=5):
-        video_capture=cv2.VideoCapture("C:\\Users\\lekev\\OneDrive - University of Waterloo\\University\\FYDP\\CrowdQuote\\ComputerVision-Subsystem\\resources\\test3.ogg")
+        image_path="C:\\Users\\lekev\\OneDrive - University of Waterloo\\University\\FYDP\\CrowdQuote\\ComputerVision-Subsystem\\resources\\test_imgs"
         frame_width=1080
         frame_height=720
 
         entranceCoord1 = (frame_width//5, 0)
         entranceCoord2 = (4*frame_width//5, 100)
 
-        output_video=cv2.VideoWriter(f'{self.output_video_path}/output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frame_width, frame_height))
+        # output_video=cv2.VideoWriter(f'{self.output_video_path}/output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frame_width, frame_height))
         model=YOLO(self.model)
 
-        img_count = 0
         try:
             self.population_scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (self.population_scheduler,))
-            while True:
+            imgs = self.poll_image(image_path)
+            for img in imgs: # TODO: replace this with a busy poll from raspberry pi
                 self.population_scheduler.run(blocking=False)
-                success, img = video_capture.read()
                 img = cv2.resize(img, (frame_width, frame_height))
                 cv2.namedWindow("Image")
                 self.drawBounds(img)
-                img_count += 1
-                if (img_count % 5 != 0):
-                    continue 
                 # do frame by frame for video
                 results=model.predict(img, stream=True, classes=[0])
-                # draw a line in the center of the image
-                # self.drawEntranceExitLine(img, (0, line_entrance_height), (frame_width, line_entrance_height))
                 self.drawEntranceExitBox(img, entranceCoord1, entranceCoord2)
                 
-                cv2.putText(img, f'People Entering: {self.tracker.total_entering}', (0, math.ceil(0.2*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
-                cv2.putText(img, f'People Exiting: {self.tracker.total_exiting}', (0, math.ceil(0.3*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
-
                 # check each bounding box -> draw a rectangle and label it
+                count = 0
                 for r in results:
-                    person_rects = []
                     boxes=r.boxes
                     for box in boxes:
                         object_class=int(box.cls[0])
@@ -86,32 +79,25 @@ class ObjectDetector():
                         print("Confidence: ", conf)
                         class_name=self.classes[object_class]
                         if class_name == self.classes[0] and conf >= 0.7: # check if it's a person, ignore other objects
+                            count +=1
+
                             x1, y1, x2, y2 = box.xyxy[0]
                             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-                            person_rects.append((x1, y1, x2, y2))
-                    
-                    person_objects = self.utiliseTracker(person_rects)
-                    for (objectID, centroid) in person_objects.items():
-                        person_object = self.tracked_persons.get(objectID, None)
+                            centroid = (int((x2+x1)/2), int((y1+y2)/2))
+                            person_object = PersonObject(centroid)
+                            self.labelObject(img, self.classes[0], person_object)
+                
+                if self.people_count != count:
+                    self.people_count = count
+                    update_population(self.server_url, self.location_id, self.people_count)
+                    print(f"Updated pop: {self.people_count}")
 
-                        if not person_object:
-                            person_object = PersonObject(objectID, centroid)    
-                        else:
-                            person_object.centroids.append(centroid)
-                        # store the trackable object in our dictionary
-                        self.tracked_persons[objectID] = person_object
-                        self.labelObject(img, self.classes[0], person_object)
-                                    
-        
-                output_video.write(img)
+                # output_video.write(img)
                 cv2.imshow("Image", img)
                 if cv2.waitKey(1) & 0xFF==ord('q'):
                     break
         except Exception as e:
             print(f"Object detection error: {e}")
-
-        video_capture.release()
-        output_video.release()
         cv2.destroyAllWindows()
 
     def drawEntranceExitLine(self, img, coord1, coord2):
@@ -125,7 +111,7 @@ class ObjectDetector():
         # x1,y1,x2,y2,id = person_object
         # cv2.rectangle(img, (x1,y1), (x2,y2), color, 1)
         
-        label=f'{class_name} {person_object.objectID} {self.tracker.state[person_object.objectID]}'
+        label=f'{class_name}'
         # t_size = cv2.getTextSize(label, 0, fontScale=1, thickness=1)[0]
         # c2 = x1 + t_size[0], y1 - t_size[1] - 3
         # bounding box
@@ -155,10 +141,9 @@ class ObjectDetector():
         scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (scheduler,))
 
         # send post req
-        people_count = max(0, self.tracker.total_entering - self.tracker.total_exiting)
         print("Sending POST request!")
         print(self.server_url)
-        update_population(self.server_url, self.location_id, people_count)
+        update_population(self.server_url, self.location_id, self.people_count)
 
     def detect_click(self, event,x,y,flags,param):
         """Called whenever user left clicks"""
@@ -176,3 +161,14 @@ class ObjectDetector():
         cv2.setMouseCallback('Image', lambda *args : None)
         self.entrance_points = np.array(self.pts)
         self.tracker.updateEntranceBounds(self.entrance_points)
+
+    def poll_image(self, folder):
+        # TODO: change this later to poll image from the raspberry PI camera
+        images = []
+        for filename in os.listdir(folder):
+            img = cv2.imread(os.path.join(folder, filename))
+            if img is not None:
+                images.append(img)
+
+        return images
+
