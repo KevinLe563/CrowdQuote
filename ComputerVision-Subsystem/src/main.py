@@ -6,12 +6,12 @@ import cv2
 import configparser
 
 
-config_path = str((Path(__file__).parent / "config.ini").resolve())
-config = configparser.ConfigParser()
-config.read(config_path)
+# config_path = str((Path(__file__).parent / "config.ini").resolve())
+# config = configparser.ConfigParser()
+# config.read(config_path)
 
-image_path = str(Path(config_path, config['VIDEOS']['video12']).resolve())
-image = cv2.imread(image_path)
+# image_path = str(Path(config_path, config['VIDEOS']['video12']).resolve())
+# image = cv2.imread(image_path)
 
 # def onClick(event,x,y,flags,param):
 #     """Called whenever user left clicks"""
@@ -30,6 +30,6 @@ image = cv2.imread(image_path)
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
-objectDetector = ObjectDetector(config_path, 4)
+objectDetector = ObjectDetector(4)
 
-objectDetector.detectObject(image_path)
+objectDetector.detectObject()
