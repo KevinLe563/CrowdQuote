@@ -1,33 +1,27 @@
 from ultralytics import YOLO
-from pathlib import Path
-from object_tracking import CentroidTracker
 from person import PersonObject
 from http_django import update_population
-import numpy as np
 import cv2
 import math
-import configparser
-import sched
+import os
 import time
+import numpy as np
+import subprocess
 
 
 # credit: https://github.com/MuhammadMoinFaisal/Computervisionprojects/blob/main/YOLOv8-CrashCourse/Running_YOLOv8_Video/YOLOv8_Video.py
 # credit: https://github.com/saimj7/People-Counting-in-Real-Time/tree/master
 
 class ObjectDetector():
-    def __init__(self, config_path, location_id, time_per_POST=60):
-        self.config = configparser.ConfigParser()
-        self.config.read(config_path)
+    def __init__(self, location_id):
         self.location_id = location_id
-        self.time_per_POST = time_per_POST
-        self.population_scheduler = sched.scheduler(time.time, time.sleep)
 
-        self.tracker = CentroidTracker()
-        self.model = str(Path(self.config['YOLO']['yolov8model']))
-        self.output_video_path = str(Path(config_path, self.config['VIDEOS']['output_videos']).resolve())
+        # self.model = "~/FYDP/best.pt" # folder for pi
+        self.model = "./../training/train17/weights/best.pt"
+
         self.server_url = "http://127.0.0.1:8000/api/population/"
         self.classes = [
-                "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
+                "person", "pedestrian", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
                 "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
                 "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
                 "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat",
@@ -39,138 +33,100 @@ class ObjectDetector():
                 "teddy bear", "hair drier", "toothbrush"
             ] # all avaialble classes of the model, only person is used
         
+        self.pts = []
         self.tracked_persons = {}
-        self.total_entering = 0
-        self.total_exiting = 0
-        
-    def detectObject(self, video_path, entrance_height=None, centroid_radius=5):
-        video_capture=cv2.VideoCapture("rtsp://192.168.31.142:8554/stream1")
+        self.people_count = 0
+        self.entrance_points = None
 
-        frame_width=int(video_capture.get(3))
-        frame_height = int(video_capture.get(4))
+        abspath = os.path.abspath(__file__)
+        dname = os.path.dirname(abspath)
+        os.chdir(dname)
 
-        output_video=cv2.VideoWriter(f'{self.output_video_path}/output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frame_width, frame_height))
+
+    def detectObject(self, entrance_height=None, centroid_radius=5):
+        frame_width=1080
+        frame_height=720
+
         model=YOLO(self.model)
 
-        line_entrance_height = entrance_height if entrance_height else frame_height//2
-        img_count = 0
         try:
-            self.population_scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (self.population_scheduler,))
             while True:
-                self.population_scheduler.run(blocking=False)
-                success, img = video_capture.read()
-                img_count += 1
-                if (img_count % 3 != 0):
-                    continue 
-                # do frame by frame for video
-                results=model(img,stream=True)
-                # draw a line in the center of the image
-                self.drawEntranceExitLine(img, (0, line_entrance_height), (frame_width, line_entrance_height))
-                cv2.putText(img, f'People Entering: {self.total_entering}', (0, math.ceil(0.2*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
-                cv2.putText(img, f'People Exiting: {self.total_exiting}', (0, math.ceil(0.3*frame_height)), 0, 1, (0, 255, 0), thickness=1,lineType=cv2.LINE_AA)
+                # subprocess.run(["libcamera-jpeg", "-o", "test_images/test.jpg"])
 
+                img = self.poll_image()
+                height, width, channels = img.shape
+                self.draw_grid(img, height, width)
+                cv2.namedWindow("Image")
+                results=model.predict(img, stream=True, classes=[0])
+                
                 # check each bounding box -> draw a rectangle and label it
+                count = 0
+                # {"row col" : count}
+                grid = {}
                 for r in results:
-                    person_rects = []
                     boxes=r.boxes
                     for box in boxes:
                         object_class=int(box.cls[0])
+                        conf=math.ceil((box.conf[0]*100))/100
+                        print("Confidence: ", conf)
                         class_name=self.classes[object_class]
-                        if class_name == self.classes[0]: # check if it's a person, ignore other objects
+                        if (class_name == self.classes[0] or class_name == self.classes[1]) and conf >= 0: # check if it's a person, ignore other objects
+                            count +=1
+
                             x1, y1, x2, y2 = box.xyxy[0]
                             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-                            person_rects.append((x1, y1, x2, y2))
-                    
-                    person_objects = self.utiliseTracker(person_rects)
-                    for (objectID, centroid) in person_objects.items():
-                        person_object = self.tracked_persons.get(objectID, None)
-
-                        if not person_object:
-                            person_object = PersonObject(objectID, centroid)
-                        else:
-                            # the difference between the y-coordinate of the *current*
-                            # centroid and the mean of *previous* centroids will tell
-                            # us in which direction the object is moving (negative for
-                            # 'up' and positive for 'down')
-
-                            # c[1] is the y value of centroid
-                            y = [c[1] for c in person_object.centroids]
-                            direction = centroid[1] - np.mean(y)
-                            person_object.centroids.append(centroid)
-
-                            # check to see if the object has been counted or not
-                            if not person_object.is_counted:
-                                # if the direction is negative (indicating the object
-                                # is moving up and entering) AND the centroid is above the center
-                                # line, count the object
-                                # also make sure object started below the line to start
-                                if direction < 0 and centroid[1] < line_entrance_height and person_object.centroids[0][1] > line_entrance_height:
-                                    self.total_entering += 1
-                                    person_object.is_counted = True
-
-                                # if the direction is positive (indicating the object
-                                # is moving down and is exiting) AND the centroid is below the
-                                # center line, count the object
-                                # also make sure object started above the line to start
-                                elif direction > 0 and centroid[1] > line_entrance_height and person_object.centroids[0][1] < line_entrance_height:
-                                    self.total_exiting += 1
-                                    person_object.is_counted = True
-                            
-                        # store the trackable object in our dictionary
-                        self.tracked_persons[objectID] = person_object
-                        self.labelObject(img, self.classes[0], person_object)
-                                    
-        
-                output_video.write(img)
+                            centroid = (int((x2+x1)/2), int((y1+y2)/2))
+                            self.classify_grid(centroid[0], centroid[1], height, width, grid)
+                            person_object = PersonObject(centroid)
+                            self.labelObject(img, self.classes[0], person_object)
+                
+                self.people_count = count
+                update_population(self.server_url, self.location_id, self.people_count, grid)
+                print(f"Updated pop: {self.people_count}")
+                print(f"Grid: ", grid)
+                img = cv2.resize(img, (frame_width, frame_height))
                 cv2.imshow("Image", img)
-                if cv2.waitKey(1) & 0xFF==ord('q'):
-                    break
+                cv2.waitKey(5000)
+                # if cv2.waitKey(1) & 0xFF==ord('q'):
+                #     break
+
+                time.sleep(10)
         except Exception as e:
             print(f"Object detection error: {e}")
-
-        video_capture.release()
-        output_video.release()
         cv2.destroyAllWindows()
 
-    def drawEntranceExitLine(self, img, coord1, coord2):
-        cv2.line(img, coord1, coord2, (0, 255, 0), thickness=2)
+    def draw_grid(self, img, height, width, rows=4, cols=4):
+        dx, dy = width/cols, height/rows
+
+        for i in range(1, cols):
+            x = round(dx*i)
+            cv2.line(img, (x, 0), (x, height), color=(0, 255, 255), thickness=5)
+            
+        for i in range(1, rows):
+            y = round(dy*i)
+            cv2.line(img, (0, y), (width, y), color=(0, 255, 255), thickness=5)
+
+    def classify_grid(self, x, y, height, width, grid, rows=4, cols=4):
+        dx = width/cols
+        dy = height/rows
+        col = int(x//dx)
+        row = int(y//dy)
+
+        key = f"{row}  {col}"
+
+        grid[key] = grid.get(key, 0) + 1
+        return
 
     def labelObject(self, img, class_name, person_object, color=(255,0,255)):
-        # x1,y1,x2,y2,id = person_object
-        # cv2.rectangle(img, (x1,y1), (x2,y2), color, 1)
-        
-        label=f'{class_name} {person_object.objectID}'
-        # t_size = cv2.getTextSize(label, 0, fontScale=1, thickness=1)[0]
-        # c2 = x1 + t_size[0], y1 - t_size[1] - 3
-        # bounding box
-        # cv2.rectangle(img, (x1,y1), c2, color, -1, cv2.LINE_AA)  # filled
-        # centroid
-        # bounding_box_width = x2-x1
-        # bounding_box_height = y2-y1
-        # center_x = x1 + bounding_box_width//2
-        # center_y = y1 + bounding_box_height//2
-        cv2.circle(img, person_object.centroids[-1], 5, color, cv2.FILLED)
-        # class label
-        cv2.putText(img, label, (person_object.centroids[-1][0], person_object.centroids[-1][1]-2), 0, 1, (255, 255, 255), thickness=1,lineType=cv2.LINE_AA)
+        cv2.circle(img, person_object.centroids[-1], 15, color, cv2.FILLED)
     
-
-    def utiliseTracker(self, person_objects):
-        # print(person_objects)
-        return self.tracker.update(person_objects)
-        
-    # used to reset the system when the camera is off
-    def reset(self):
-        self.tracker.reset()
-        self.tracked_persons = {}
-        self.total_entering = 0
-        self.total_exiting = 0
-
-    def POST_scheduler(self, scheduler):
-        # schedule the next call first
-        scheduler.enter(self.time_per_POST, 1, self.POST_scheduler, (scheduler,))
-
+    def POST_req(self, grid):
         # send post req
-        people_count = max(0, self.total_entering - self.total_exiting)
         print("Sending POST request!")
         print(self.server_url)
-        update_population(self.server_url, self.location_id, people_count)
+        update_population(self.server_url, self.location_id, self.people_count, grid)
+
+    def poll_image(self):
+        folder="test_images"
+        img = cv2.imread(os.path.join(folder, "test2.jpg"))
+        return img

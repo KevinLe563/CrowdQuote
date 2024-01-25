@@ -30,4 +30,5 @@ class Population(models.Model):
     people_count = models.PositiveIntegerField()
     # set timestamp to when the object is created
     timestamp = models.DateTimeField(auto_now=True)
+    grid = models.JSONField()
 
