@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 from person import PersonObject
 from http_django import update_population
+from collections import defaultdict
 import cv2
 import math
 import os
@@ -17,7 +18,8 @@ class ObjectDetector():
         self.location_id = location_id
 
         # self.model = "~/FYDP/best.pt" # folder for pi
-        self.model = "./../training/train17/weights/best.pt"
+        self.model = "./../training/train21/weights/best.pt"
+        # self.model = "./../yolo/yolov8x.pt"
 
         self.server_url = "http://127.0.0.1:8000/api/population/"
         self.classes = [
@@ -62,7 +64,7 @@ class ObjectDetector():
                 # check each bounding box -> draw a rectangle and label it
                 count = 0
                 # {"row col" : count}
-                grid = {}
+                grid = defaultdict(list)
                 for r in results:
                     boxes=r.boxes
                     for box in boxes:
@@ -107,14 +109,19 @@ class ObjectDetector():
             cv2.line(img, (0, y), (width, y), color=(0, 255, 255), thickness=5)
 
     def classify_grid(self, x, y, height, width, grid, rows=4, cols=4):
-        dx = width/cols
-        dy = height/rows
-        col = int(x//dx)
-        row = int(y//dy)
+        # send cluster # as the key, x y coordinate of point as the value -> each cluster # is unique, can use length of dict
 
-        key = f"{row}  {col}"
+        # dx = width/cols
+        # dy = height/rows
+        # col = int(x//dx)
+        # row = int(y//dy)
 
-        grid[key] = grid.get(key, 0) + 1
+        # key = f"{row}  {col}"
+
+        key = len(grid)
+        val = [x, y]
+        grid[key].append(val)
+
         return
 
     def labelObject(self, img, class_name, person_object, color=(255,0,255)):

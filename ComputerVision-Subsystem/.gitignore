@@ -4,3 +4,4 @@ yolo/*
 **/__pycache__/
 datasets/VisDrone/*
 resources
+**/train21/*

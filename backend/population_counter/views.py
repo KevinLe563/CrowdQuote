@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from rest_framework.decorators import action
@@ -7,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import PopulationSerializer, LocationSerializer, CameraSerializer
 from .models import Population, Location, Camera
+from .hierarchical_clustering import hierarchical_cluster
 
 # Create your views here.
 # class PopulationView(mixins.RetrieveModelMixin):
@@ -32,8 +35,13 @@ class CameraView(viewsets.ModelViewSet):
 
 class PopulationView(views.APIView):
     def post(self, request, format=None):
+        # request.data
+        # process
+        # replace the field in the data with updted data -> output of clustering will be {cluster #: ["x,y", "x,y"]}
+        hierarchical_cluster(json.loads(request.data["grid"]))
         serializer = PopulationSerializer(data=request.data)
         if serializer.is_valid():
+            print(request.data["grid"])
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
