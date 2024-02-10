@@ -16,6 +16,7 @@ import { Line } from "react-chartjs-2";
 import "./index.css";
 
 import CloseButton from "../../assets/imgs/x.svg";
+import ClusterModal from "../ClusterModal";
 
 ChartJS.register(
 	LineElement,
@@ -40,6 +41,9 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, position }) => {
 	const [address, setAddress] = useState<string>();
 	const [purpose, setPurpose] = useState<string>();
 	const [populationData, setPopulationData] = useState<any[]>();
+
+	const [openClusterModal, setOpenClusterModal] = useState(false);
+	const [pointClicked, setPointClicked] = useState(null);
 
 	const fetchData = async () => {
 		await axios
@@ -151,10 +155,26 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, position }) => {
 				beginAtZero: true,
 			},
 		},
+		onClick: function (event: any, elements: any) {
+			if (elements && elements.length > 0) {
+				const clickedIndex = elements[0].index;
+				const clickedDataPoint = populationData[clickedIndex];
+				console.log("Clicked data point:", clickedDataPoint);
+
+				setPointClicked(clickedIndex);
+				setOpenClusterModal(true);
+			}
+		},
 	};
 
 	return (
 		<div className="modal-container">
+			<ClusterModal
+				open={openClusterModal}
+				onClose={() => setOpenClusterModal(false)}
+				populationData={populationData}
+				point={pointClicked}
+			/>
 			<div className="left-container">
 				<div>
 					<h1>{purpose}</h1>
