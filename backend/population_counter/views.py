@@ -38,10 +38,10 @@ class PopulationView(views.APIView):
         # request.data
         # process
         # replace the field in the data with updted data -> output of clustering will be {cluster #: ["x,y", "x,y"]}
-        hierarchical_cluster(json.loads(request.data["grid"]))
+        best_k, best_cluster = hierarchical_cluster(json.loads(request.data["grid"]))
+        request.data["grid"] = best_cluster
         serializer = PopulationSerializer(data=request.data)
         if serializer.is_valid():
-            print(request.data["grid"])
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

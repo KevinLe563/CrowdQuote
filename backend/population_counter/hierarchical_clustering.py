@@ -55,7 +55,10 @@ def hierarchical_cluster(initial_clusters, termination_threshold=200):
             clusters.pop(c2)
 
         plot_clusters(best_clusters)
-        return best_k, best_clusters
+
+        # convert best_clusters to {index: list_of_points}
+        best_cluster_dict = {str(index): sublist for index, sublist in enumerate(best_clusters)}
+        return best_k, best_cluster_dict
 
 def plot_clusters(clusters):
     for i, cluster in enumerate(clusters):
