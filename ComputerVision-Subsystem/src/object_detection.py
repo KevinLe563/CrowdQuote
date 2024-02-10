@@ -57,6 +57,8 @@ class ObjectDetector():
 
                 img = self.poll_image()
                 height, width, channels = img.shape
+                self.img_height = height
+                self.img_width = width
                 self.draw_grid(img, height, width)
                 cv2.namedWindow("Image")
                 results=model.predict(img, stream=True, classes=[0])
@@ -83,7 +85,7 @@ class ObjectDetector():
                             self.labelObject(img, self.classes[0], person_object)
                 
                 self.people_count = count
-                update_population(self.server_url, self.location_id, self.people_count, grid)
+                self.POST_req(grid)
                 print(f"Updated pop: {self.people_count}")
                 print(f"Grid: ", grid)
                 img = cv2.resize(img, (frame_width, frame_height))
@@ -131,7 +133,7 @@ class ObjectDetector():
         # send post req
         print("Sending POST request!")
         print(self.server_url)
-        update_population(self.server_url, self.location_id, self.people_count, grid)
+        update_population(self.server_url, self.location_id, self.people_count, grid, self.img_height, self.img_width)
 
     def poll_image(self):
         folder="test_images"

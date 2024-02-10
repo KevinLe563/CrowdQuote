@@ -3,13 +3,13 @@
 import requests
 import json
 
-def update_population(url, location_id, people_count, grid):
+def update_population(url, location_id, people_count, grid, img_height, img_width):
     try:
         body = {
             "location_id": location_id,
             "people_count": people_count,
-            # "rows": 4,
-            # "cols": 4,
+            "img_height": img_height,
+            "img_width": img_width,
             "grid": json.dumps(grid),
         }
         res = requests.post(url, json = body)
