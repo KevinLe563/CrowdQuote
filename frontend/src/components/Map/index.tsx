@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { GoogleMap, MarkerF, useLoadScript } from "@react-google-maps/api";
 import usePlacesAutocomplete, {
 	getGeocode,
@@ -23,11 +23,11 @@ const markerPositions = [
 
 const Map = () => {
 	const [openModal, setOpenModal] = useState(false);
-	const [position, setPositionModal] = useState(null);
+	const [position, setPositionModal] = useState<any>(null);
 	const [selected, setSelected] = useState(null);
 
 	const { isLoaded } = useLoadScript({
-		googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+		googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
 		libraries: ["places"],
 	});
 
@@ -42,7 +42,7 @@ const Map = () => {
 
 	// reverse geocode to display address when hover
 	// const reverseGeocode = () => {
-	// 	const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`;
+	// 	const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${import.meta.env.VITE_APP_GOOGLE_MAPS_API_KEY}`;
 	// 	fetch(url).then((response) =>
 	// 		response.json().then((location) => {
 	// 			console.log(location);
