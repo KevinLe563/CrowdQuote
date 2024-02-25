@@ -54,6 +54,7 @@ def hierarchical_cluster(initial_clusters, termination_threshold=200):
         clusters[c1].extend(clusters[c2])
         clusters.pop(c2)
 
+    plot_best_silhouette_score(best_clusters)
     plot_clusters(best_clusters)
 
     # convert best_clusters to {index: list_of_points}
@@ -128,16 +129,28 @@ def evaluate_k_fitness(clusters):
         flattened.extend(np.array(cluster_sil).flatten())
 
     red_line = np.mean(np.array(flattened))
-    if len(clusters) < 15:
-        plot_silhouette_scores(all_cluster_scores, red_line)
+    if len(clusters) <= 15 and len(clusters) % 5 == 0:
+        plot_silhouette_scores(all_cluster_scores)
 
     fitness = fitness_function_for_all_cluster_silhouettes(all_cluster_scores, red_line)
 
     return fitness
 
+def plot_best_silhouette_score(clusters):
+    means = [mean_of_cluster(cluster) for cluster in clusters]
+    all_cluster_scores = [
+        silhouette_score_for_each_point_in_cluster(cluster, i, means)
+        for i, cluster in enumerate(clusters)
+    ]
+    plot_silhouette_scores(all_cluster_scores)
 
-def plot_silhouette_scores(cluster_scores, avg_sil_score):
+def plot_silhouette_scores(cluster_scores):
     # print(cluster_scores)
+    flattened = []
+    for cluster_sil in cluster_scores:
+        flattened.extend(np.array(cluster_sil).flatten())
+
+    avg_sil_score = np.mean(np.array(flattened))
     fig, ax = plt.subplots()
     bar_width = 0.2
     max_values = max(len(cluster) for cluster in cluster_scores)
@@ -147,11 +160,20 @@ def plot_silhouette_scores(cluster_scores, avg_sil_score):
         scores.sort(reverse=True)
         start_index = cluster_width * i
         index = np.linspace(start_index, start_index + (len(scores)-1)*bar_width, len(scores))
-        ax.barh(index, scores, bar_width)
+        ax.barh(index, scores, bar_width, label=f"Cluster {i}")
 
+    clusters = [f'Cluster {i+1}' for i in range(len(cluster_scores))]
+    yticks_pos = [i * cluster_width for i in range(len(cluster_scores))]
+    ax.set_yticks(yticks_pos)
+    ax.set_yticklabels(clusters)
+
+
+    # Set the x-axis and y-axis labels
+    ax.set_xlabel('Silhouette Coefficient Values')
+    ax.set_ylabel('Cluster Labels')
     plt.axvline(avg_sil_score, color="red", linestyle="--")
     ax.invert_yaxis() 
-
+    plt.title(f"Silhouette scores for k={len(cluster_scores)}")
     plt.tight_layout()
     plt.show()
 
