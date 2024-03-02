@@ -143,7 +143,7 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, position }) => {
 			x: {
 				title: {
 					display: true,
-					text: "Date",
+					text: "Datetime",
 				},
 				type: "time",
 				time: {
