@@ -208,7 +208,7 @@ const ClusterModal: React.FC<ModalProps> = ({
 						<div>Time: {formatTime(currentPop.timestamp)}</div>
 					</div>
 				</div>
-				<div className="buttons-container">
+				<div className="right-button">
 					<button
 						onClick={handleRightButtonClick}
 						disabled={currentIndex === populationData.length - 1}

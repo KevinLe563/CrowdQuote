@@ -58,5 +58,10 @@
 
 .info {
 	padding-top: 24vh;
+	width: 45vw;
 	display: block;
+}
+
+.right-button {
+	padding-right: 3vw;
 }
