@@ -37,6 +37,9 @@ interface ModalProps {
 	position: any;
 }
 
+const url = "http://fydp.willfla.me";
+// const url = "http://localhost:8000";
+
 const Modal: React.FC<ModalProps> = ({ open, onClose, position }) => {
 	const [address, setAddress] = useState<string>();
 	const [purpose, setPurpose] = useState<string>();
@@ -47,7 +50,7 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, position }) => {
 
 	const fetchData = async () => {
 		await axios
-			.get("http://localhost:8000/api/location/", {
+			.get(`${url}/api/location/`, {
 				params: {
 					lat: position["lat"],
 					lng: position["lng"],
@@ -58,7 +61,7 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, position }) => {
 				const data = res.data;
 
 				axios
-					.get("http://localhost:8000/api/population/", {
+					.get(`${url}/api/population/`, {
 						params: {
 							location_id: data.id,
 						},
