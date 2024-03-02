@@ -1,9 +1,37 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Scatter } from "react-chartjs-2";
 import CloseButton from "../../assets/imgs/x.svg";
 import "./index.css";
 
 import backgroundImage from "../../assets/imgs/layout.jpg";
+
+const useKeyPress = (targetKey: any) => {
+	const [keyPressed, setKeyPressed] = useState(false);
+
+	useEffect(() => {
+		const downHandler = ({ key }) => {
+			if (key === targetKey) {
+				setKeyPressed(true);
+			}
+		};
+
+		const upHandler = ({ key }) => {
+			if (key === targetKey) {
+				setKeyPressed(false);
+			}
+		};
+
+		window.addEventListener("keydown", downHandler);
+		window.addEventListener("keyup", upHandler);
+
+		return () => {
+			window.removeEventListener("keydown", downHandler);
+			window.removeEventListener("keyup", upHandler);
+		};
+	}, [targetKey]);
+
+	return keyPressed;
+};
 
 interface ModalProps {
 	open?: boolean;
@@ -23,6 +51,11 @@ const ClusterModal: React.FC<ModalProps> = ({
 	}
 
 	const [currentIndex, setCurrentIndex] = useState(point);
+	const pageRef = useRef(null);
+
+	useEffect(() => {
+		pageRef.current.focus();
+	}, []);
 
 	const handleLeftButtonClick = () => {
 		if (currentIndex > 0) {
@@ -36,14 +69,41 @@ const ClusterModal: React.FC<ModalProps> = ({
 		}
 	};
 
-	console.log(populationData[currentIndex]);
+	const arrowLeftPressed = useKeyPress("ArrowLeft");
+	const arrowRightPressed = useKeyPress("ArrowRight");
+
+	useEffect(() => {
+		if (arrowLeftPressed) {
+			handleLeftButtonClick();
+		}
+	}, [arrowLeftPressed]);
+
+	useEffect(() => {
+		if (arrowRightPressed) {
+			handleRightButtonClick();
+		}
+	}, [arrowRightPressed]);
+
+	// const keyDownEvent = (event: React.KeyboardEvent<HTMLDivElement>) => {
+	// 	event.preventDefault();
+	// 	console.log(event.code);
+	// 	if (event.code === "ArrowRight") {
+	// 		handleRightButtonClick();
+	// 	}
+	// 	if (event.code === "ArrowLeft") {
+	// 		handleLeftButtonClick();
+	// 	}
+	// };
+
+	console.log(
+		populationData.length,
+		currentIndex,
+		populationData[currentIndex]
+	);
 
 	const currentPop = populationData[currentIndex];
+	const imgWidth = currentPop.img_width;
 	const imgHeight = currentPop.img_height;
-
-	// console.log(imgHeight, imgWidth);
-
-	// console.log(currentIndex);
 
 	const groupedDataPoints: any = {};
 	Object.entries(currentPop.grid).forEach(([key, values]: any) => {
@@ -78,12 +138,6 @@ const ClusterModal: React.FC<ModalProps> = ({
 	};
 
 	const options = {
-		// options: {
-		// 	responsive: true,
-		// 	maintainAspectRatio: false,
-		// 	height: imgHeight,
-		// 	width: 100,
-		// },
 		plugins: {
 			legend: {
 				display: false,
@@ -94,18 +148,20 @@ const ClusterModal: React.FC<ModalProps> = ({
 				type: "linear",
 				beginAtZero: true,
 				// display: false,
+				suggestedMax: imgWidth - 500,
 			},
 			y: {
 				type: "linear",
 				beginAtZero: true,
 				// dispay: false,
+				suggestedMax: imgHeight - 500,
 			},
 		},
 		maintainAspectRatio: false,
 	};
 
 	return (
-		<div className="c-modal-container">
+		<div className="c-modal-container" ref={pageRef}>
 			<div>
 				<button className="c-close-button" onClick={onClose}>
 					<img className="c-close-icon" src={CloseButton} alt="close" />
@@ -147,7 +203,10 @@ const ClusterModal: React.FC<ModalProps> = ({
 					>
 						Left
 					</button>
-					<div className="time">Time: {formatTime(currentPop.timestamp)}</div>
+					<div className="info">
+						<div>Population: {currentPop.people_count}</div>
+						<div>Time: {formatTime(currentPop.timestamp)}</div>
+					</div>
 				</div>
 				<div className="buttons-container">
 					<button

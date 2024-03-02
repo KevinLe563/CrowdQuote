@@ -52,10 +52,11 @@
 }
 
 .left {
-	margin-top: 32vh;
+	margin-top: 30vh;
 	margin-left: -37vw;
 }
 
-.time {
-	padding-top: 28vh;
+.info {
+	padding-top: 24vh;
+	display: block;
 }
