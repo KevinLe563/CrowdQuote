@@ -29,6 +29,30 @@ class LocationView(views.APIView):
         except(Location.DoesNotExist):
             print("Location doesn't exist!")
 
+    def put(self, request):
+        obj = Location.objects.all().filter(id=request.query_params['id']).first()
+        if not obj:
+            return Response(
+                {"res": "Object with location id does not exists"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        data = {
+            "id": request.query_params['id'],
+            "civic_number": request.data.get('civic_number'),
+            "street_name": request.data.get('street_name'),
+            "postal_code": request.data.get('postal_code'),
+            "building_name": request.data.get('building_name'),
+            "room": request.data.get('room'),
+            "lng": request.data.get('lng'),
+            "lat": request.data.get('lat'), 
+        }
+        serializer = LocationSerializer(instance=obj, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class CameraView(viewsets.ModelViewSet):
     queryset = Camera.objects.all()
     serializer_class = CameraSerializer
