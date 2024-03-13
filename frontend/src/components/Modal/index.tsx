@@ -64,6 +64,7 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, position }) => {
 					.get(`${url}/api/population/`, {
 						params: {
 							location_id: data.id,
+							hours: 1, // edit time
 						},
 					})
 					.then((res) => {
