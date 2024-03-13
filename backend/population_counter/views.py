@@ -74,7 +74,7 @@ class PopulationView(views.APIView):
         # return population in the last 72 hours
         location_id = request.query_params["location_id"]
         hours = request.query_params['hours']
-        qs = Population.objects.filter(location_id=location_id, timestamp__gte=timezone.now()-timezone.timedelta(hours=hours)).order_by("timestamp")
+        qs = Population.objects.filter(location_id=location_id, timestamp__gte=timezone.now()-timezone.timedelta(hours=int(hours))).order_by("timestamp")
         serializer = PopulationSerializer(qs, many=True)
         return Response(serializer.data)
 
