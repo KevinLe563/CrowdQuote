@@ -1,5 +1,5 @@
 from object_detection import ObjectDetector
 
-objectDetector = ObjectDetector(4)
+objectDetector = ObjectDetector(5)
 
 objectDetector.detectObject()

@@ -21,7 +21,7 @@ class ObjectDetector():
         self.model = "./../training/train21/weights/best.pt"
         # self.model = "./../yolo/yolov8x.pt"
 
-        self.server_url = "http://127.0.0.1:8000/api/population/"
+        self.server_url = "http://fydp.willfla.me/api/population/"
         self.classes = [
                 "person", "pedestrian", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
                 "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
@@ -54,8 +54,12 @@ class ObjectDetector():
         try:
             while True:
                 # subprocess.run(["libcamera-jpeg", "-o", "test_images/test.jpg"])
+                cam = cv2.VideoCapture(0) 
+  
+                # reading the input using the camera 
+                result, img = cam.read() 
 
-                img = self.poll_image()
+                # img = self.poll_image()
                 height, width, channels = img.shape
                 self.img_height = height
                 self.img_width = width
